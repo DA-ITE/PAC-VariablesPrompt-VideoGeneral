@@ -1,0 +1,1501 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PAC · Generador Synthesia V4</title>
+
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
+
+<style>
+  :root{
+    --red:#FF0050;
+    --red-soft:#fff2f6;
+    --ink:#17181c;
+    --muted:#6d717b;
+    --line:#e5e7eb;
+    --soft:#f7f8fa;
+    --soft2:#fbfbfc;
+    --ok:#11795b;
+    --warn:#9a6700;
+    --danger:#b42318;
+    --danger-bg:#fff3f2;
+    --shadow:0 18px 50px rgba(20,20,25,.08);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background:#f3f4f6;color:var(--ink);
+    font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  }
+  .wrap{width:min(1240px,calc(100% - 36px));margin:0 auto}
+  .topbar{
+    background:linear-gradient(135deg,#111114 0%,#1e1117 55%,#2e0816 100%);
+    border-bottom:4px solid var(--red);color:#fff;padding:26px 0 30px;
+  }
+  .brandrow{display:flex;justify-content:space-between;gap:22px;align-items:center}
+  .brand{display:flex;align-items:center;gap:14px}
+  .mark{
+    width:44px;height:44px;border-radius:14px;background:var(--red);
+    display:grid;place-items:center;font-weight:900;font-size:20px;
+    box-shadow:0 10px 28px rgba(255,0,80,.28)
+  }
+  h1{font-size:28px;line-height:1.15;margin:0 0 7px}
+  .subtitle{margin:0;color:#d6d7db;font-size:13px;line-height:1.5}
+  .badge{border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.07);
+    border-radius:999px;padding:9px 13px;font-size:11px;white-space:nowrap}
+  main{padding:28px 0 52px}
+
+  .card{
+    background:#fff;border:1px solid var(--line);border-radius:20px;
+    box-shadow:var(--shadow);margin-bottom:20px;overflow:hidden
+  }
+  .card-h{
+    padding:20px 24px;border-bottom:1px solid var(--line);
+    display:flex;justify-content:space-between;align-items:flex-start;gap:16px
+  }
+  .card-h h2{margin:0;font-size:19px}
+  .card-h p{margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.5}
+  .eyebrow{font-size:11px;font-weight:900;letter-spacing:.12em;color:var(--red);text-transform:uppercase;margin-bottom:5px}
+  .card-b{padding:24px}
+  .hidden{display:none!important}
+
+  .upload{
+    border:2px dashed #d9dbe1;border-radius:18px;padding:26px;text-align:center;background:var(--soft);
+    transition:.18s ease;cursor:pointer
+  }
+  .upload.drag{border-color:var(--red);background:var(--red-soft)}
+  .upload-icon{
+    width:52px;height:52px;border:1px solid var(--line);border-radius:16px;background:#fff;
+    margin:0 auto 12px;display:grid;place-items:center;font-size:24px
+  }
+  .upload strong{display:block;font-size:16px;margin-bottom:4px}
+  .upload span{font-size:13px;color:var(--muted)}
+  #fileInput{display:none}
+
+  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+  button{
+    border:0;border-radius:11px;padding:10px 14px;font:inherit;font-size:12px;font-weight:800;
+    cursor:pointer;transition:.15s ease
+  }
+  button:hover{transform:translateY(-1px)}
+  button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+  .primary{background:var(--red);color:#fff;box-shadow:0 8px 22px rgba(255,0,80,.20)}
+  .secondary{background:#fff;border:1px solid var(--line);color:var(--ink)}
+  .ghost{background:var(--soft);color:var(--ink)}
+  .danger{background:var(--danger-bg);color:var(--danger);border:1px solid #ffd3cf}
+  .tiny{padding:7px 9px;font-size:11px;border-radius:9px}
+
+  input[type=text],input[type=number],select,textarea{
+    width:100%;border:1px solid #dfe1e6;border-radius:12px;padding:11px 12px;background:#fff;
+    color:var(--ink);font:inherit;outline:none;transition:.15s ease
+  }
+  input:focus,select:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(255,0,80,.08)}
+  textarea{resize:vertical;line-height:1.5;min-height:105px}
+  label,.section-label{font-size:11px;font-weight:900;letter-spacing:.07em;color:#383c45;text-transform:uppercase}
+  .hint{font-size:11px;color:#858a94;line-height:1.45;margin-top:6px}
+  .field{margin-bottom:17px}
+
+  .status{display:none;margin-top:16px;padding:13px 15px;border-radius:12px;font-size:12px;line-height:1.5}
+  .status.ok{display:block;background:#edf9f4;border:1px solid #cbeadd;color:#0d6348}
+  .status.warn{display:block;background:#fff8e6;border:1px solid #f4e2aa;color:#805c00}
+  .status.err{display:block;background:#fff0f0;border:1px solid #f2cccc;color:#982121}
+
+  .chips{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{border-radius:999px;padding:7px 10px;background:var(--soft);font-size:11px;font-weight:800}
+  .chip.red{background:var(--red-soft);color:#bd003c}
+  .chip.ok{background:#edf9f4;color:var(--ok)}
+  .chip.bad{background:#fff0f0;color:var(--danger)}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:900px){.grid2{grid-template-columns:1fr}.brandrow{flex-direction:column;align-items:flex-start}}
+
+  .editor-block{
+    border:1px solid var(--line);border-radius:16px;background:var(--soft2);
+    padding:16px;margin-bottom:14px
+  }
+  .editor-head{
+    display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px
+  }
+  .editor-title{display:flex;align-items:center;gap:9px;font-weight:850;font-size:13px}
+  .num{
+    width:30px;height:30px;border-radius:9px;background:var(--red-soft);color:#c90042;
+    display:grid;place-items:center;font-size:11px;font-weight:900;flex:0 0 auto
+  }
+  .module-grid{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
+  .topic-row{
+    display:grid;grid-template-columns:74px 1fr auto;gap:9px;align-items:center;margin-top:9px
+  }
+  .topic-tag{
+    background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 8px;
+    font-size:10px;font-weight:900;text-align:center;color:#565b65
+  }
+  .eval-grid{
+    display:grid;grid-template-columns:180px 1fr 92px auto;gap:9px;align-items:center
+  }
+  .eval-evidence{grid-column:2/4}
+  .eval-module{grid-column:1/2}
+  @media(max-width:760px){
+    .eval-grid{grid-template-columns:1fr 92px auto}
+    .eval-grid select{grid-column:1/2}
+    .eval-grid .eval-label{grid-column:1/3}
+    .eval-grid .eval-weight{grid-column:1/2}
+    .eval-grid .remove-eval{grid-column:3/4;grid-row:1/2}
+    .eval-evidence{grid-column:1/4}
+    .eval-module{grid-column:1/4}
+  }
+  .addbar{
+    display:flex;justify-content:center;padding:13px;border:1.5px dashed #d9dce2;
+    border-radius:13px;background:#fff
+  }
+
+  .callout{
+    border-left:3px solid var(--red);background:var(--red-soft);border-radius:0 12px 12px 0;
+    padding:13px 15px;font-size:12px;color:#5c2738;line-height:1.55;margin-bottom:17px
+  }
+
+  .tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);padding:0 24px}
+  .tab{
+    background:transparent;border-radius:10px 10px 0 0;padding:14px 12px;color:#6d717b;
+    border-bottom:3px solid transparent
+  }
+  .tab.active{color:var(--ink);border-bottom-color:var(--red)}
+  .panel{padding:24px}
+  .field-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px}
+  .copybtn{background:#fff;border:1px solid var(--line);padding:7px 10px;font-size:11px;border-radius:9px}
+  .promptbox{
+    min-height:470px;background:#141417;color:#f5f5f7;border:1px solid #27272c;
+    font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;line-height:1.55
+  }
+  .prompt-title{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}
+  .prompt-title h3{margin:0;font-size:16px}
+  .prompt-title p{margin:4px 0 0;color:var(--muted);font-size:11px}
+  .footer-note{text-align:center;color:#8a8e97;font-size:11px;margin-top:18px}
+</style>
+</head>
+
+<body>
+<header class="topbar">
+  <div class="wrap brandrow">
+    <div class="brand">
+      <div class="mark">P</div>
+      <div>
+        <h1>PAC · Generador para Synthesia</h1>
+        <p class="subtitle">Carga un sílabo, corrige la estructura y genera las variables y prompts usando exactamente los cambios visibles en pantalla.</p>
+      </div>
+    </div>
+    <div class="badge">Plantilla editable · V4</div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="card">
+    <div class="card-h">
+      <div>
+        <div class="eyebrow">Paso 1</div>
+        <h2>Carga el sílabo</h2>
+        <p>Recomendado: DOCX. También puedes pegar el texto completo manualmente.</p>
+      </div>
+    </div>
+    <div class="card-b">
+      <div id="drop" class="upload">
+        <div class="upload-icon">↑</div>
+        <strong id="uploadTitle">Arrastra tu sílabo aquí</strong>
+        <span id="uploadMeta">o haz clic para seleccionar un archivo .docx, .txt o .md</span>
+        <input id="fileInput" type="file" accept=".docx,.txt,.md,.doc" />
+      </div>
+      <div class="actions">
+        <button id="processBtn" class="primary" disabled>Procesar sílabo</button>
+        <button id="pasteBtn" class="secondary">Pegar texto</button>
+        <button id="resetBtn" class="ghost">Limpiar todo</button>
+      </div>
+      <textarea id="manualText" class="hidden" style="margin-top:14px;min-height:180px" placeholder="Pega aquí el texto completo del sílabo y pulsa “Procesar sílabo”."></textarea>
+      <div id="status" class="status"></div>
+    </div>
+  </section>
+
+  <section id="reviewCard" class="card hidden">
+    <div class="card-h">
+      <div>
+        <div class="eyebrow">Paso 2</div>
+        <h2>Revisa y corrige antes de generar</h2>
+        <p>Puedes eliminar o añadir módulos, temas y evaluaciones. Los prompts se construirán únicamente con la estructura que dejes aquí.</p>
+      </div>
+      <div id="summaryChips" class="chips"></div>
+    </div>
+
+    <div class="card-b">
+      <div class="callout">
+        <strong>Esta pantalla es el control final.</strong> Puedes eliminar, añadir o editar módulos, temas y evaluaciones.
+        Al pulsar <strong>Generar variables y prompts</strong>, el recurso volverá a leer <strong>todo lo que esté visible en esta pantalla</strong>
+        y usará exclusivamente esa versión actualizada, no la detección inicial del sílabo.
+      </div>
+      <div id="draftState" class="status ok" style="display:block;margin-top:0;margin-bottom:18px">
+        Sin cambios pendientes. El resultado se generará desde la versión visible del editor.
+      </div>
+
+      <div class="grid2">
+        <div>
+          <div class="field">
+            <label for="courseTitle">Nombre del curso</label>
+            <input id="courseTitle" type="text" />
+          </div>
+          <div class="field">
+            <label for="purpose">Propósito detectado</label>
+            <textarea id="purpose"></textarea>
+          </div>
+          <div class="field">
+            <label for="achievement">Logro destacado</label>
+            <textarea id="achievement"></textarea>
+          </div>
+          <div class="field">
+            <label for="finalEvidence">Producto / evidencia final</label>
+            <textarea id="finalEvidence" style="min-height:90px"></textarea>
+            <div class="hint">Este texto se usa para completar la locución de evaluación y el Motion Graphic final.</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="field-head">
+            <label>Estructura evaluativa</label>
+            <button id="addEvalBtn" class="secondary tiny">+ Añadir evaluación</button>
+          </div>
+          <div id="evalEditor"></div>
+        </div>
+      </div>
+
+      <div style="margin-top:10px" class="field-head">
+        <label>Módulos y temas</label>
+        <button id="addModuleBtn" class="secondary tiny">+ Añadir módulo</button>
+      </div>
+      <div id="moduleEditor"></div>
+
+      <div class="actions">
+        <button id="regenBtn" class="primary">Generar variables y prompts</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="resultsCard" class="card hidden">
+    <div class="card-h">
+      <div>
+        <div class="eyebrow">Paso 3</div>
+        <h2>Contenido listo para Synthesia</h2>
+        <p>El resultado usa exactamente los módulos, temas y evaluaciones que dejaste en el paso anterior.</p>
+      </div>
+      <button id="copyAllBtn" class="secondary">Copiar las 4 variables</button>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="vars">Variables</button>
+      <button class="tab" data-tab="prompts">Prompts Motion Graphic</button>
+    </div>
+
+    <div id="vars" class="panel">
+      <div id="appliedSummary" class="callout" style="background:#f7f8fa;border-left-color:#17181c;color:#34373d">
+        <strong>Datos aplicados:</strong> todavía no se ha generado el resultado.
+      </div>
+      <div class="field">
+        <div class="field-head"><label>NOMBRE_CURSO</label><button class="copybtn" data-copy="outName">Copiar</button></div>
+        <textarea id="outName" style="min-height:64px"></textarea>
+      </div>
+      <div class="field">
+        <div class="field-head"><label>DESCRIPCION_CURSO</label><button class="copybtn" data-copy="outDescription">Copiar</button></div>
+        <textarea id="outDescription"></textarea>
+        <div class="hint">Está redactado para continuar después de “El curso de [NOMBRE_CURSO]…”.</div>
+      </div>
+      <div class="field">
+        <div class="field-head"><label>RECORRIDO_CURSO</label><button class="copybtn" data-copy="outRoute">Copiar</button></div>
+        <textarea id="outRoute" style="min-height:150px"></textarea>
+      </div>
+      <div class="field">
+        <div class="field-head"><label>EVALUACION_CURSO</label><button class="copybtn" data-copy="outEval">Copiar</button></div>
+        <textarea id="outEval" style="min-height:140px"></textarea>
+      </div>
+    </div>
+
+    <div id="prompts" class="panel hidden">
+      <div class="prompt-title">
+        <div>
+          <h3>Motion Graphic 1 · Recorrido</h3>
+          <p>Incluye distribución adaptable, márgenes, animación progresiva y validaciones.</p>
+        </div>
+        <button class="copybtn" data-copy="routePrompt">Copiar prompt</button>
+      </div>
+      <textarea id="routePrompt" class="promptbox"></textarea>
+
+      <div class="prompt-title" style="margin-top:26px">
+        <div>
+          <h3>Motion Graphic 2 · Evaluación</h3>
+          <p>Incluye porcentajes, línea de progreso, 100% final y título sin decoración.</p>
+        </div>
+        <button class="copybtn" data-copy="evalPrompt">Copiar prompt</button>
+      </div>
+      <textarea id="evalPrompt" class="promptbox"></textarea>
+    </div>
+  </section>
+
+  <div class="footer-note">Procesamiento local en el navegador. Al generar, la fuente de verdad es el editor visible, no la detección inicial del sílabo.</div>
+</main>
+
+<script>
+const $=s=>document.querySelector(s);
+const $$=s=>[...document.querySelectorAll(s)];
+
+let file=null;
+let lines=[];
+let data=null;
+
+function clean(s=""){return String(s).replace(/\u00a0/g," ").replace(/\s+/g," ").trim()}
+function canon(s=""){
+  return clean(s).normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/[“”"]/g,"").replace(/^\s*\d+\s*[.\-)]\s*/,"").toUpperCase()
+}
+function stripBullet(s=""){return clean(s).replace(/^[•·▪◦\-–—]\s*/,"")}
+function noPeriod(s=""){return clean(s).replace(/[.\s]+$/,"")}
+function lowerFirst(s=""){s=clean(s);return s?s[0].toLowerCase()+s.slice(1):s}
+function esc(s=""){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]))}
+function idx(lines,key,start=0){
+  const k=canon(key);
+  for(let i=start;i<lines.length;i++){const c=canon(lines[i]);if(c===k||c.includes(k))return i}
+  return -1
+}
+function section(lines,a,b){
+  const x=idx(lines,a);if(x<0)return[];
+  const y=idx(lines,b,x+1);return lines.slice(x+1,y<0?lines.length:y)
+}
+function numberWord(n){
+  const m={0:"cero",1:"uno",2:"dos",3:"tres",4:"cuatro",5:"cinco",6:"seis",7:"siete",8:"ocho",9:"nueve",10:"diez",15:"quince",20:"veinte",25:"veinticinco",30:"treinta",35:"treinta y cinco",40:"cuarenta",45:"cuarenta y cinco",50:"cincuenta",60:"sesenta",70:"setenta",80:"ochenta",90:"noventa",100:"cien"};
+  return m[n]??String(n)
+}
+function countWord(n){return ({1:"un",2:"dos",3:"tres",4:"cuatro",5:"cinco",6:"seis",7:"siete",8:"ocho"}[n]||String(n))}
+function sumWeights(){return data.evaluations.reduce((a,e)=>a+(Number(e.weight)||0),0)}
+
+function setStatus(type,msg){
+  const el=$("#status");el.className=`status ${type}`;el.textContent=msg
+}
+
+const drop=$("#drop"),input=$("#fileInput"),processBtn=$("#processBtn"),manualText=$("#manualText");
+drop.onclick=()=>input.click();
+drop.ondragover=e=>{e.preventDefault();drop.classList.add("drag")};
+drop.ondragleave=()=>drop.classList.remove("drag");
+drop.ondrop=e=>{e.preventDefault();drop.classList.remove("drag");if(e.dataTransfer.files?.[0])setFile(e.dataTransfer.files[0])};
+input.onchange=()=>{if(input.files?.[0])setFile(input.files[0])};
+
+function setFile(f){
+  file=f;$("#uploadTitle").textContent=f.name;
+  $("#uploadMeta").textContent=`${(f.size/1024).toFixed(1)} KB · listo para procesar`;
+  processBtn.disabled=false;setStatus("ok","Archivo cargado. Pulsa “Procesar sílabo”.")
+}
+$("#pasteBtn").onclick=()=>{manualText.classList.toggle("hidden");if(!manualText.classList.contains("hidden")){manualText.focus();processBtn.disabled=false}};
+$("#resetBtn").onclick=()=>location.reload();
+
+async function extractText(){
+  if(!manualText.classList.contains("hidden")&&manualText.value.trim().length>100)return manualText.value;
+  if(!file)throw new Error("Selecciona un archivo.");
+  const ext=file.name.split(".").pop().toLowerCase();
+  if(ext==="doc")throw new Error("El formato .DOC antiguo no se lee de forma confiable. Guarda el archivo como .DOCX.");
+  if(ext==="txt"||ext==="md")return await file.text();
+  if(ext==="docx"){
+    if(!window.mammoth)throw new Error("No se pudo cargar el lector DOCX. Verifica tu conexión y vuelve a abrir el HTML.");
+    const ab=await file.arrayBuffer();const r=await mammoth.extractRawText({arrayBuffer:ab});return r.value
+  }
+  throw new Error("Formato no compatible. Usa DOCX, TXT o MD.")
+}
+
+processBtn.onclick=async()=>{
+  processBtn.disabled=true;setStatus("warn","Leyendo y analizando el sílabo...");
+  try{
+    const raw=await extractText();lines=raw.split(/\r?\n/).map(clean).filter(Boolean);
+    data=parse(lines);renderReview();$("#reviewCard").classList.remove("hidden");
+    setStatus("ok","Sílabo procesado. Revisa, elimina o añade elementos antes de generar.");
+    $("#reviewCard").scrollIntoView({behavior:"smooth",block:"start"})
+  }catch(e){setStatus("err",e.message||String(e))}
+  processBtn.disabled=false
+};
+
+function parse(lines){
+  const iDatos=idx(lines,"DATOS GENERALES");
+  let title="";
+  if(iDatos>0){for(let i=iDatos-1;i>=0;i--){if(clean(lines[i])){title=clean(lines[i]);break}}}
+  if(!title)title=clean(lines[0]||"");
+
+  const sumilla=section(lines,"SUMILLA","LOGRO DESTACADO DEL CURSO").join(" ");
+  const logroSec=section(lines,"LOGRO DESTACADO DEL CURSO","COMPETENCIAS POR DESARROLLAR");
+  const achievement=logroSec.find(x=>x.length>20)||"";
+
+  let purpose="";
+  let m=sumilla.match(/Tiene como prop[oó]sito que el docente\s+(.+?)(?:\.\s|$)/i);
+  if(!m)m=sumilla.match(/Tiene como prop[oó]sito\s+(.+?)(?:\.\s|$)/i);
+  purpose=m?noPeriod(m[1]):noPeriod(sumilla.split(".")[0]||"");
+
+  const org=section(lines,"ORGANIZACIÓN DEL APRENDIZAJE","ESTRATEGIAS DE APRENDIZAJE");
+  const modules=[];
+  for(let i=0;i<org.length;i++){
+    const mm=canon(org[i]).match(/MODULO DE APRENDIZAJE\s*#?\s*(\d+)/);
+    if(mm){
+      const num=Number(mm[1]);let name="";
+      for(let j=i+1;j<Math.min(i+7,org.length);j++){
+        const c=canon(org[j]);
+        if(!c||c.includes("RESULTADO DE APRENDIZAJE")||c.includes("CONTENIDOS INVOLUCRADOS")||c.includes("MODULO DE APRENDIZAJE"))continue;
+        name=noPeriod(stripBullet(org[j]));break
+      }
+      modules.push({id:crypto.randomUUID(),num,name,topics:[]})
+    }
+  }
+
+  const acts=section(lines,"ACTIVIDADES PRINCIPALES","RECURSOS Y MATERIALES");
+  let currentModule=null;const topics=[];
+  for(const line of acts){
+    if(/^\d+$/.test(line)){const n=Number(line);if(modules.some(m=>m.num===n))currentModule=n;continue}
+    const mt=line.match(/^TEMA\s*(\d+)\s*:\s*(.+)$/i);
+    if(mt)topics.push({id:crypto.randomUUID(),num:Number(mt[1]),title:noPeriod(mt[2]),module:currentModule})
+  }
+  if(topics.length&&modules.length){
+    const per=Math.ceil(topics.length/modules.length);
+    topics.forEach((t,i)=>{if(!t.module)t.module=modules[Math.min(modules.length-1,Math.floor(i/per))].num});
+    modules.forEach(m=>m.topics=topics.filter(t=>t.module===m.num))
+  }
+
+  const evSec=section(lines,"SISTEMA DE EVALUACIÓN","ACTIVIDADES PRINCIPALES");
+  const starts=[];
+  for(let i=0;i<evSec.length;i++){
+    const c=canon(evSec[i]);let type=null,label=null,module=null;
+    const am=c.match(/ACTIVIDAD MODULO\s*(\d+)/);
+    if(am){type="activity";module=Number(am[1]);label=`ACTIVIDAD MÓDULO ${module}`}
+    else if(c==="PARTICIPACION"||c.startsWith("PARTICIPACION ")){type="participation";label="PARTICIPACIÓN"}
+    else if(c.includes("PROYECTO FINAL")){type="final_project";label="PROYECTO FINAL"}
+    else if(c.includes("EXAMEN FINAL")){type="final_exam";label="EXAMEN FINAL"}
+    if(type)starts.push({i,type,label,module})
+  }
+
+  const evaluations=[];
+  starts.forEach((s,k)=>{
+    const end=k+1<starts.length?starts[k+1].i:evSec.length;
+    const block=evSec.slice(s.i+1,end);
+    let weight=0;
+    for(const x of block){const mm=x.match(/(\d{1,3})\s*%/);if(mm){weight=Number(mm[1]);break}}
+    const evidence=block.find(x=>{
+      const c=canon(x);
+      return x.length>25&&!/^AA\d+$/i.test(x)&&!/^PA$/i.test(x)&&!/^PROY/i.test(x)&&!/^EXFN/i.test(x)&&!/^\d+\s*%$/.test(x)&&!c.startsWith("FORMULA")
+    })||"";
+    evaluations.push({id:crypto.randomUUID(),type:s.type,label:s.label,module:s.module,weight,evidence:noPeriod(evidence)})
+  });
+
+  // Eliminar automáticamente filas claramente vacías o duplicadas.
+  const seen=new Set();
+  const cleanEvals=evaluations.filter(e=>{
+    const key=`${e.type}|${e.module||""}|${e.label}`;
+    if(seen.has(key))return false;
+    seen.add(key);
+    return e.label||e.weight||e.evidence
+  });
+
+  let finalEvidence="";
+  const fe=cleanEvals.find(e=>e.type==="final_project"||e.type==="final_exam");
+  if(fe){finalEvidence=noPeriod((fe.evidence||"").split(":")[0])}
+
+  return {title,purpose,achievement,modules,evaluations:cleanEvals,finalEvidence}
+}
+
+function renderReview(){
+  $("#courseTitle").value=data.title;
+  $("#purpose").value=data.purpose;
+  $("#achievement").value=data.achievement;
+  $("#finalEvidence").value=data.finalEvidence;
+  renderModules();renderEvals();updateChips();
+  const s=$("#draftState");
+  if(s){
+    s.className="status ok";
+    s.style.display="block";
+    s.textContent="Sin cambios pendientes. El resultado se generará desde la versión visible del editor.";
+  }
+}
+
+function updateChips(){
+  const topicCount=data.modules.reduce((a,m)=>a+m.topics.length,0);
+  const total=sumWeights();
+  $("#summaryChips").innerHTML=`
+    <span class="chip red">${data.modules.length} módulo(s)</span>
+    <span class="chip">${topicCount} tema(s)</span>
+    <span class="chip ${total===100?"ok":"bad"}">${total}% evaluación</span>`
+}
+
+function syncTopFields(){
+  data.title=$("#courseTitle").value.trim();
+  data.purpose=$("#purpose").value.trim();
+  data.achievement=$("#achievement").value.trim();
+  data.finalEvidence=$("#finalEvidence").value.trim()
+}
+["courseTitle","purpose","achievement","finalEvidence"].forEach(id=>$("#"+id).addEventListener("input",syncTopFields));
+
+function renumber(){
+  let t=1;
+  data.modules.forEach((m,i)=>{
+    m.num=i+1;
+    m.topics.forEach(x=>{x.num=t++;x.module=m.num})
+  });
+  data.evaluations.forEach(e=>{
+    if(e.type==="activity"){
+      if(!e.module||e.module>data.modules.length)e.module=Math.min(1,data.modules.length)||1;
+      e.label=`ACTIVIDAD MÓDULO ${e.module}`
+    }
+  })
+}
+
+function renderModules(){
+  renumber();
+  const root=$("#moduleEditor");
+  if(!data.modules.length){
+    root.innerHTML=`<div class="addbar"><button class="secondary" id="emptyAddModule">+ Añadir primer módulo</button></div>`;
+    $("#emptyAddModule").onclick=()=>addModule();
+    updateChips();return
+  }
+
+  root.innerHTML=data.modules.map((m,mi)=>`
+    <div class="editor-block" data-mid="${m.id}">
+      <div class="editor-head">
+        <div class="editor-title"><span class="num">${m.num}</span>Módulo ${m.num}</div>
+        <button class="danger tiny remove-module" data-mid="${m.id}">Quitar módulo</button>
+      </div>
+      <div class="module-grid">
+        <input class="module-name" data-mid="${m.id}" type="text" value="${esc(m.name)}" placeholder="Nombre del módulo">
+        <button class="secondary tiny add-topic" data-mid="${m.id}">+ Añadir tema</button>
+      </div>
+      <div class="topics">
+        ${m.topics.map(t=>`
+          <div class="topic-row">
+            <div class="topic-tag">TEMA ${t.num}</div>
+            <input class="topic-name" data-tid="${t.id}" data-mid="${m.id}" type="text" value="${esc(t.title)}" placeholder="Nombre del tema">
+            <button class="danger tiny remove-topic" data-tid="${t.id}" data-mid="${m.id}">Quitar</button>
+          </div>`).join("")}
+      </div>
+    </div>`).join("");
+
+  $$(".module-name").forEach(el=>el.oninput=()=>{
+    const m=data.modules.find(x=>x.id===el.dataset.mid);if(m)m.name=el.value
+  });
+  $$(".topic-name").forEach(el=>el.oninput=()=>{
+    const m=data.modules.find(x=>x.id===el.dataset.mid);const t=m?.topics.find(x=>x.id===el.dataset.tid);if(t)t.title=el.value
+  });
+  $$(".add-topic").forEach(b=>b.onclick=()=>addTopic(b.dataset.mid));
+  $$(".remove-topic").forEach(b=>b.onclick=()=>removeTopic(b.dataset.mid,b.dataset.tid));
+  $$(".remove-module").forEach(b=>b.onclick=()=>removeModule(b.dataset.mid));
+  updateChips()
+}
+
+function addModule(){
+  syncAllFromEditor();
+  data.modules.push({id:crypto.randomUUID(),num:data.modules.length+1,name:"",topics:[]});
+  renderModules();renderEvals();markDraftChanged()
+}
+function removeModule(id){
+  syncAllFromEditor();
+  data.modules=data.modules.filter(m=>m.id!==id);
+  renumber();renderModules();renderEvals();markDraftChanged()
+}
+function addTopic(mid){
+  syncAllFromEditor();
+  const m=data.modules.find(x=>x.id===mid);if(!m)return;
+  m.topics.push({id:crypto.randomUUID(),num:0,title:"",module:m.num});
+  renderModules();markDraftChanged()
+}
+function removeTopic(mid,tid){
+  syncAllFromEditor();
+  const m=data.modules.find(x=>x.id===mid);if(!m)return;
+  m.topics=m.topics.filter(t=>t.id!==tid);renderModules();markDraftChanged()
+}
+$("#addModuleBtn").onclick=addModule;
+
+function evalTypeOptions(selected){
+  const opts=[
+    ["activity","Actividad de módulo"],
+    ["participation","Participación"],
+    ["final_project","Proyecto final"],
+    ["final_exam","Examen final"],
+    ["other","Otra evaluación"]
+  ];
+  return opts.map(([v,l])=>`<option value="${v}" ${v===selected?"selected":""}>${l}</option>`).join("")
+}
+
+function moduleOptions(selected){
+  if(!data.modules.length)return `<option value="">Sin módulos</option>`;
+  return data.modules.map(m=>`<option value="${m.num}" ${Number(selected)===m.num?"selected":""}>Módulo ${m.num}</option>`).join("")
+}
+
+function renderEvals(){
+  renumber();
+  const root=$("#evalEditor");
+  if(!data.evaluations.length){
+    root.innerHTML=`<div class="addbar"><button class="secondary" id="emptyAddEval">+ Añadir primera evaluación</button></div>`;
+    $("#emptyAddEval").onclick=()=>addEval();
+    updateChips();return
+  }
+
+  root.innerHTML=data.evaluations.map((e,ei)=>`
+    <div class="editor-block eval-item" data-eid="${e.id}">
+      <div class="editor-head">
+        <div class="editor-title"><span class="num">${String(ei+1).padStart(2,"0")}</span>Componente de evaluación</div>
+        <button class="danger tiny remove-eval" data-eid="${e.id}">Quitar evaluación</button>
+      </div>
+      <div class="eval-grid">
+        <select class="eval-type" data-eid="${e.id}">${evalTypeOptions(e.type)}</select>
+        <input class="eval-label" data-eid="${e.id}" type="text" value="${esc(e.label)}" placeholder="Nombre mostrado">
+        <input class="eval-weight" data-eid="${e.id}" type="number" min="0" max="100" value="${e.weight||""}" placeholder="%">
+        <span></span>
+        <div class="eval-module ${e.type==="activity"?"":"hidden"}">
+          <select class="eval-module-select" data-eid="${e.id}">${moduleOptions(e.module)}</select>
+        </div>
+        <input class="eval-evidence" data-eid="${e.id}" type="text" value="${esc(e.evidence)}" placeholder="Evidencia / producto evaluado">
+      </div>
+    </div>`).join("");
+
+  $$(".remove-eval").forEach(b=>b.onclick=()=>removeEval(b.dataset.eid));
+  $$(".eval-type").forEach(el=>el.onchange=()=>{
+    const e=data.evaluations.find(x=>x.id===el.dataset.eid);if(!e)return;
+    e.type=el.value;
+    if(e.type==="activity"){
+      e.module=e.module||1;e.label=`ACTIVIDAD MÓDULO ${e.module}`
+    }else if(e.type==="participation"){e.module=null;e.label="PARTICIPACIÓN"}
+    else if(e.type==="final_project"){e.module=null;e.label="PROYECTO FINAL"}
+    else if(e.type==="final_exam"){e.module=null;e.label="EXAMEN FINAL"}
+    else {e.module=null;if(/^ACTIVIDAD MÓDULO|PARTICIPACIÓN|PROYECTO FINAL|EXAMEN FINAL$/i.test(e.label))e.label=""}
+    renderEvals()
+  });
+  $$(".eval-label").forEach(el=>el.oninput=()=>{
+    const e=data.evaluations.find(x=>x.id===el.dataset.eid);if(e)e.label=el.value
+  });
+  $$(".eval-weight").forEach(el=>el.oninput=()=>{
+    const e=data.evaluations.find(x=>x.id===el.dataset.eid);if(e)e.weight=Number(el.value)||0;updateChips()
+  });
+  $$(".eval-evidence").forEach(el=>el.oninput=()=>{
+    const e=data.evaluations.find(x=>x.id===el.dataset.eid);if(e)e.evidence=el.value
+  });
+  $$(".eval-module-select").forEach(el=>el.onchange=()=>{
+    const e=data.evaluations.find(x=>x.id===el.dataset.eid);if(e){e.module=Number(el.value)||1;e.label=`ACTIVIDAD MÓDULO ${e.module}`;renderEvals()}
+  });
+  updateChips()
+}
+
+function addEval(){
+  syncAllFromEditor();
+  const nextModule=Math.min(data.modules.length||1, data.evaluations.filter(e=>e.type==="activity").length+1);
+  data.evaluations.push({
+    id:crypto.randomUUID(),type:"activity",module:nextModule,
+    label:`ACTIVIDAD MÓDULO ${nextModule}`,weight:0,evidence:""
+  });
+  renderEvals();markDraftChanged()
+}
+function removeEval(id){
+  syncAllFromEditor();
+  data.evaluations=data.evaluations.filter(e=>e.id!==id);renderEvals();markDraftChanged()
+}
+$("#addEvalBtn").onclick=addEval;
+
+
+function markDraftChanged(){
+  const s=$("#draftState");
+  if(!s)return;
+  s.className="status warn";
+  s.style.display="block";
+  s.textContent="Hay cambios en el editor. Al pulsar “Generar variables y prompts” se aplicarán automáticamente.";
+}
+
+/**
+ * FUENTE DE VERDAD:
+ * reconstruye data leyendo directamente lo que está visible en el editor.
+ * Así, todo lo añadido, eliminado o editado se usa al generar.
+ */
+function syncAllFromEditor(){
+  syncTopFields();
+
+  // MÓDULOS Y TEMAS: reconstruir desde el DOM actual.
+  const newModules=[];
+  let topicCounter=1;
+  $$("#moduleEditor .editor-block[data-mid]").forEach((block,mi)=>{
+    const mid=block.dataset.mid || crypto.randomUUID();
+    const name=(block.querySelector(".module-name")?.value || "").trim();
+    const mod={id:mid,num:mi+1,name,topics:[]};
+
+    block.querySelectorAll(".topic-row").forEach(row=>{
+      const input=row.querySelector(".topic-name");
+      if(!input)return;
+      mod.topics.push({
+        id:input.dataset.tid || crypto.randomUUID(),
+        num:topicCounter++,
+        title:input.value.trim(),
+        module:mi+1
+      });
+    });
+    newModules.push(mod);
+  });
+  data.modules=newModules;
+
+  // EVALUACIONES: reconstruir desde las tarjetas actualmente visibles.
+  const newEvaluations=[];
+  $$("#evalEditor .eval-item[data-eid]").forEach(block=>{
+    const eid=block.dataset.eid || crypto.randomUUID();
+    const type=block.querySelector(".eval-type")?.value || "other";
+    const moduleSelect=block.querySelector(".eval-module-select");
+    let module=type==="activity" ? (Number(moduleSelect?.value)||1) : null;
+    let label=(block.querySelector(".eval-label")?.value || "").trim();
+    const weight=Number(block.querySelector(".eval-weight")?.value)||0;
+    const evidence=(block.querySelector(".eval-evidence")?.value || "").trim();
+
+    if(type==="activity" && (!label || /^ACTIVIDAD MÓDULO\s*\d+$/i.test(label))){
+      label=`ACTIVIDAD MÓDULO ${module}`;
+    }
+    if(type==="participation" && !label) label="PARTICIPACIÓN";
+    if(type==="final_project" && !label) label="PROYECTO FINAL";
+    if(type==="final_exam" && !label) label="EXAMEN FINAL";
+
+    newEvaluations.push({id:eid,type,label,module,weight,evidence});
+  });
+  data.evaluations=newEvaluations;
+
+  // Normalizar numeración SIN reintroducir elementos eliminados.
+  topicCounter=1;
+  data.modules.forEach((m,i)=>{
+    m.num=i+1;
+    m.topics.forEach(t=>{
+      t.num=topicCounter++;
+      t.module=m.num;
+    });
+  });
+
+  // Mantener asociaciones válidas de actividades a módulos existentes.
+  data.evaluations.forEach(e=>{
+    if(e.type==="activity"){
+      const max=Math.max(1,data.modules.length);
+      e.module=Math.min(Math.max(1,Number(e.module)||1),max);
+      if(!e.label || /^ACTIVIDAD MÓDULO\s*\d+$/i.test(e.label)){
+        e.label=`ACTIVIDAD MÓDULO ${e.module}`;
+      }
+    }
+  });
+
+  updateChips();
+
+  const s=$("#draftState");
+  if(s){
+    s.className="status ok";
+    s.style.display="block";
+    s.textContent="Cambios aplicados. Variables y prompts se generarán con esta versión actualizada.";
+  }
+}
+
+function appliedSummaryHtml(){
+  const mods=data.modules.length;
+  const topics=data.modules.reduce((a,m)=>a+m.topics.length,0);
+  const evals=data.evaluations.length;
+  const total=sumWeights();
+
+  const modNames=data.modules
+    .map(m=>`Módulo ${m.num}: ${clean(m.name)||"Sin nombre"} (${m.topics.length} tema${m.topics.length===1?"":"s"})`)
+    .join(" · ");
+
+  const evalNames=data.evaluations
+    .map(e=>`${clean(e.label)||"Evaluación"} ${Number(e.weight)||0}%`)
+    .join(" · ");
+
+  return `<strong>Datos aplicados al resultado:</strong>
+    ${mods} módulo${mods===1?"":"s"}, ${topics} tema${topics===1?"":"s"}, ${evals} componente${evals===1?"":"s"} de evaluación y ${total}% total.
+    ${modNames?`<br><span style="color:#666a73">${esc(modNames)}</span>`:""}
+    ${evalNames?`<br><span style="color:#666a73">${esc(evalNames)}</span>`:""}`;
+}
+
+// Cualquier edición visible marca el borrador como modificado.
+$("#reviewCard").addEventListener("input",ev=>{
+  if(ev.target.matches("input, textarea, select")) markDraftChanged();
+});
+$("#reviewCard").addEventListener("change",ev=>{
+  if(ev.target.matches("input, textarea, select")) markDraftChanged();
+});
+
+
+function infinitive(p){
+  let s=clean(p).replace(/^que el docente\s+/i,"");
+  const map=[
+    [/^diseñe e implemente\b/i,"diseñar e implementar"],[/^diseñe\b/i,"diseñar"],[/^implemente\b/i,"implementar"],
+    [/^aplique\b/i,"aplicar"],[/^transforme\b/i,"transformar"],[/^construya\b/i,"construir"],
+    [/^analice\b/i,"analizar"],[/^desarrolle\b/i,"desarrollar"],[/^fortalezca\b/i,"fortalecer"],
+    [/^integre\b/i,"integrar"],[/^utilice\b/i,"utilizar"],[/^identifique\b/i,"identificar"]
+  ];
+  for(const [re,r] of map){if(re.test(s)){s=s.replace(re,r);break}}
+  return lowerFirst(noPeriod(s))
+}
+
+function buildDescription(){
+  const c=canon(data.title);
+  if(c.includes("RETROALIMENTACION")){
+    return "te invita a transformar la manera en que acompañas el aprendizaje en entornos digitales. Aprenderás a brindar retroalimentación oportuna, personalizada y accionable, interpretar señales de participación y desempeño, y convertir esa evidencia en intervenciones que fortalezcan la motivación, el desempeño y la permanencia de tus estudiantes."
+  }
+  if(c.includes("EVALUACION")){
+    return "te propone transformar la manera en que diseñas y aplicas la evaluación. El reto será pasar de evidencias aisladas a experiencias auténticas, alineadas con competencias y desempeños observables, incorporando criterios claros, instrumentos pertinentes, retroalimentación formativa y un uso responsable de la inteligencia artificial."
+  }
+  if(c.includes("METODOLOGIAS ACTIVAS")){
+    return "no trata solo de conocer nuevas estrategias, sino de descubrir cómo convertir tus clases en experiencias donde los estudiantes participen, colaboren, tomen decisiones y aprendan haciendo. El reto será diseñar propuestas con intención pedagógica, conectando propósito, interacción, herramientas digitales y evidencias de aprendizaje."
+  }
+  const p=infinitive(data.purpose),a=lowerFirst(noPeriod(data.achievement));
+  if(p&&a)return `te invita a ${p}. El reto será ${a}.`;
+  if(p)return `te invita a ${p}, llevando lo aprendido a decisiones y acciones concretas dentro de tu práctica docente.`;
+  if(a)return `te propone fortalecer tu práctica docente a través de experiencias aplicadas. El reto será ${a}.`;
+  return "te propone fortalecer tu práctica docente mediante actividades aplicadas y transferibles al aula."
+}
+
+function joinTopics(arr){
+  const x=arr.map(t=>noPeriod(t.title)).filter(Boolean);
+  if(!x.length)return"";
+  if(x.length===1)return x[0];
+  if(x.length===2)return `${x[0]} y ${x[1]}`;
+  return `${x.slice(0,-1).join(", ")} y ${x[x.length-1]}`
+}
+
+function buildRoute(){
+  const n=data.modules.length;
+  if(!n)return "Tu recorrido de aprendizaje se organiza en módulos y temas que avanzan de manera progresiva hacia la aplicación en el aula.";
+  const intro=`Tu recorrido comprende ${countWord(n)} módulo${n===1?"":"s"}.`;
+  return `${intro} `+data.modules.map((m,i)=>{
+    const conn=i===0?"":(i===n-1?"Finalmente, ":"Luego, ");
+    const verb=i===0?"trabajarás":(i===n-1?"integrarás lo aprendido mediante":"abordarás");
+    return `${conn}en ${noPeriod(m.name||`Módulo ${m.num}`)} ${verb} ${joinTopics(m.topics)||"los temas correspondientes"}.`
+  }).join(" ")
+}
+
+function finalEvidence(){
+  if(clean(data.finalEvidence))return noPeriod(data.finalEvidence);
+  const f=data.evaluations.find(e=>e.type==="final_project"||e.type==="final_exam");
+  if(!f)return"";
+  const x=noPeriod(f.evidence||"");return x.includes(":")?x.split(":")[0]:x
+}
+
+function buildEvaluation(){
+  const chunks=[];
+  const acts=data.evaluations.filter(e=>e.type==="activity");
+  const parts=data.evaluations.filter(e=>e.type==="participation");
+  const finals=data.evaluations.filter(e=>e.type==="final_project"||e.type==="final_exam");
+  const others=data.evaluations.filter(e=>e.type==="other");
+
+  if(acts.length){
+    const same=acts.every(e=>e.weight===acts[0].weight);
+    const moduleNums=acts.map(e=>e.module).sort((a,b)=>a-b);
+    const sequential=moduleNums.every((v,i)=>v===i+1);
+    if(same&&acts.length===data.modules.length&&sequential&&acts.length>1){
+      chunks.push(`una actividad aplicada en cada módulo, con ${numberWord(acts[0].weight)} por ciento cada una`)
+    }else{
+      acts.forEach(e=>chunks.push(`una actividad en el módulo ${numberWord(e.module||1)}, con ${numberWord(e.weight)} por ciento`))
+    }
+  }
+  parts.forEach(e=>chunks.push(`participación, con ${numberWord(e.weight)} por ciento`));
+  others.forEach(e=>chunks.push(`${lowerFirst(noPeriod(e.label||"otra evaluación"))}, con ${numberWord(e.weight)} por ciento`));
+
+  finals.forEach((e,idx)=>{
+    const name=e.type==="final_exam"?"examen final":"proyecto final";
+    let s=`${idx===0?"y ":""}un ${name}, con ${numberWord(e.weight)} por ciento`;
+    const fe=finalEvidence();
+    if(fe)s+=`, en el que integrarás lo aprendido en ${lowerFirst(fe)}`;
+    chunks.push(s)
+  });
+
+  if(!chunks.length)return "Tu avance se evaluará progresivamente mediante actividades aplicadas, participación y una evidencia final integradora.";
+  let body=chunks.join("; ");
+  body=body.replace(/; y /g,"; y ");
+  return `Tu avance se evaluará progresivamente: ${body}.`
+}
+
+function routeBlock(){
+  return data.modules.map(m=>{
+    const topics=m.topics.map(t=>`TEMA ${t.num}\n${noPeriod(t.title||"Tema por definir")}`).join("\n\n");
+    return `MÓDULO ${m.num}\n${noPeriod(m.name||"Módulo por definir")}\n\n${topics}`
+  }).join("\n\n\n")
+}
+function layoutInstruction(n){
+  if(n<=1)return "Utilizar un recorrido horizontal amplio: una tarjeta de módulo protagonista seguida de sus temas, ocupando casi todo el ancho útil.";
+  if(n===2)return "Utilizar DOS GRANDES FILAS HORIZONTALES. Cada fila debe contener una tarjeta de módulo y sus temas conectados. Ambas filas deben aprovechar equilibradamente la altura disponible.";
+  if(n===3)return "Distribuir TRES recorridos amplios. Preferir tres filas si la legibilidad lo permite; si los nombres son largos, utilizar una composición 2+1 equilibrada, sin espacios muertos.";
+  if(n===4)return "Utilizar una COMPOSICIÓN 2 × 2: dos módulos en la mitad superior y dos en la mitad inferior. Cada módulo debe conservar sus temas asociados mediante conectores claros.";
+  return `Distribuir ${n} módulos mediante una retícula modular o recorrido escalonado de varias filas, conservando lectura audiovisual y ocupación entre 80% y 90% del área segura.`
+}
+
+function buildRoutePrompt(){
+return `Genera un MOTION GRAPHIC EDUCATIVO ANIMADO, moderno, elegante, limpio y minimalista, en formato horizontal 16:9 y resolución 1920x1080.
+
+OBJETIVO
+Representar visualmente el RECORRIDO DE APRENDIZAJE del curso mediante una estructura clara, progresiva y modular. Debe funcionar como pieza audiovisual a pantalla completa y conservar el mismo lenguaje gráfico aunque cambie la cantidad de módulos o temas.
+
+NO INCORPORAR
+- logotipos;
+- nombres institucionales;
+- nombres de empresas;
+- marcas;
+- slogans;
+- pies de página;
+- avatares;
+- personas;
+- fotografías;
+- botones, menús o controles;
+- números de página;
+- información no proporcionada.
+
+Mostrar EXCLUSIVAMENTE el título y la información de módulos y temas indicada más abajo.
+
+==================================================
+TÍTULO
+==================================================
+
+“Tu recorrido de aprendizaje”
+
+El título debe ser blanco, limpio, sans serif, semibold o bold y alineado a la izquierda.
+
+==================================================
+CONTENIDO
+==================================================
+
+${routeBlock()}
+
+==================================================
+CONCEPTO VISUAL
+==================================================
+
+Transmitir:
+PROGRESO → RECORRIDO → SECUENCIA → CLARIDAD → APRENDIZAJE → EVOLUCIÓN
+
+El resultado debe sentirse como una INFOGRAFÍA AUDIOVISUAL PREMIUM A PANTALLA COMPLETA, no como un dashboard pequeño.
+
+==================================================
+ESTILO VISUAL
+==================================================
+
+- Fondo negro carbón / gris grafito muy oscuro.
+- Halo rojo MUY SUTIL, amplio y difuminado como iluminación ambiental.
+- Color de acento principal: #FF0050.
+- Textos principales en blanco.
+- Textos secundarios en gris claro.
+- Tarjetas en gris carbón, ligeramente diferenciadas del fondo.
+- Bordes muy sutiles.
+- Sombras discretas.
+- Esquinas suavemente redondeadas.
+- Alto contraste y excelente legibilidad.
+- Estética tecnológica, académica, contemporánea y sobria.
+
+El rojo #FF0050 debe aparecer de forma controlada en numeraciones, nodos, conectores, pequeños bordes y detalles puntuales.
+NO usar grandes superficies rojas.
+NO usar neón intenso, partículas, brillos excesivos, 3D pronunciado ni texturas recargadas.
+
+==================================================
+DISTRIBUCIÓN PARA ESTE CURSO
+==================================================
+
+Se detectaron ${data.modules.length} módulo(s) y ${data.modules.reduce((a,m)=>a+m.topics.length,0)} tema(s).
+
+${layoutInstruction(data.modules.length)}
+
+Los MÓDULOS deben tener mayor jerarquía visual que los TEMAS.
+Cada tema debe quedar claramente asociado a su módulo.
+
+==================================================
+ALINEACIÓN IZQUIERDA — CONDICIÓN PRIORITARIA
+==================================================
+
+EL TÍTULO Y EL PRIMER ELEMENTO GRÁFICO DEBEN COMPARTIR EXACTAMENTE EL MISMO EJE VERTICAL DE INICIO.
+
+Si el título comienza en X = 7% del ancho del lienzo, la primera tarjeta o primer bloque del recorrido debe comenzar también en X = 7%.
+
+NO aplicar sangría adicional al gráfico.
+NO centrar el gráfico independientemente del título.
+NO desplazar el primer módulo hacia la derecha respecto del título.
+
+==================================================
+MÁRGENES Y APROVECHAMIENTO DEL LIENZO
+==================================================
+
+Formato: 1920x1080, horizontal 16:9.
+
+Mantener aproximadamente:
+- 7% margen izquierdo;
+- 7% margen derecho;
+- 7% margen superior;
+- 7% margen inferior.
+
+La estructura debe aprovechar aproximadamente:
+- 82% a 88% del ancho útil;
+- 72% a 82% de la altura útil.
+
+NO dejar grandes zonas vacías a la derecha o en la parte inferior.
+NO concentrar la composición en la esquina superior izquierda.
+
+REGLA:
+MENOS CONTENIDO = ELEMENTOS MÁS GRANDES.
+MÁS CONTENIDO = ELEMENTOS MÁS COMPACTOS Y REDISTRIBUIDOS.
+
+Si sobra espacio, aumentar proporcionalmente el ancho de tarjetas, la separación entre columnas y filas, y el tamaño tipográfico.
+
+==================================================
+LEGIBILIDAD
+==================================================
+
+Este recurso se verá dentro de un VIDEO.
+
+- No utilizar tipografías pequeñas.
+- No reducir el texto hasta hacerlo ilegible.
+- Dividir nombres largos en 2 o 3 líneas.
+- Mantener jerarquía clara entre título → módulo → tema → descripción secundaria.
+- Priorizar legibilidad sobre densidad.
+
+==================================================
+PRIMER FOTOGRAMA — REGLA ABSOLUTA
+==================================================
+
+En el PRIMER FOTOGRAMA debe verse ÚNICAMENTE:
+- fondo oscuro;
+- halo rojo ambiental extremadamente sutil.
+
+NADA MÁS.
+
+No pueden estar visibles inicialmente:
+- título;
+- tarjetas;
+- textos;
+- módulos;
+- temas;
+- números;
+- nodos;
+- conectores;
+- líneas;
+- bordes destacados;
+- pequeños segmentos rojos.
+
+ABSOLUTAMENTE TODOS LOS ELEMENTOS DE CONTENIDO DEBEN INGRESAR DE FORMA ANIMADA.
+
+==================================================
+REGLA PARA CONECTORES Y LÍNEAS
+==================================================
+
+NINGUNA línea o conector puede existir antes de que aparezca su elemento de origen.
+
+Orden obligatorio:
+1. aparece el elemento de origen;
+2. después comienza a dibujarse el conector;
+3. el conector avanza progresivamente;
+4. al llegar a destino aparece la siguiente tarjeta;
+5. continúa el recorrido.
+
+NO mostrar líneas precargadas, pequeños segmentos rojos flotantes ni conectores esperando una tarjeta.
+
+==================================================
+SECUENCIA DE ANIMACIÓN
+==================================================
+
+1. Fondo + halo únicamente.
+2. Aparece “Tu recorrido de aprendizaje” mediante fade in suave.
+3. Aparece MÓDULO 1.
+4. Se dibujan progresivamente sus conectores y aparecen sus temas, uno por uno.
+5. Continúa el recorrido hacia el siguiente módulo.
+6. Repetir el patrón para todos los módulos.
+7. Al final, mantener TODA LA ESTRUCTURA visible simultáneamente durante algunos segundos.
+
+Todo elemento visible debe tener entrada animada.
+
+Movimientos permitidos:
+- fade in;
+- desplazamientos cortos;
+- escalado leve 96% → 100%;
+- trazado progresivo;
+- activación sutil.
+
+Evitar rebotes, giros, zooms pronunciados, flashes, explosiones y transiciones bruscas.
+
+==================================================
+SINCRONIZACIÓN CON LOCUCIÓN
+==================================================
+
+El gráfico debe acompañar esta locución:
+
+“${buildRoute()}”
+
+Cada módulo o tema debe aparecer cuando sea mencionado o inmediatamente antes, manteniendo ritmo natural y legibilidad.
+
+==================================================
+DURACIÓN
+==================================================
+
+Adaptar la duración a la locución completa.
+Mantener ritmo pausado y profesional.
+No acelerar elementos solo para hacerlos caber.
+
+==================================================
+ADAPTABILIDAD
+==================================================
+
+La estética debe ser reutilizable con diferente cantidad de módulos y temas.
+
+Regla de adaptación:
+- 1 módulo: recorrido horizontal grande;
+- 2 módulos: dos filas amplias;
+- 3 módulos: tres recorridos o composición 2+1;
+- 4 módulos: composición 2×2;
+- más módulos: retícula modular o recorrido escalonado.
+
+En cualquier caso:
+- conservar márgenes;
+- conservar jerarquía;
+- usar 80%–90% del área útil;
+- evitar espacios muertos;
+- mantener el mismo lenguaje visual;
+- animar todos los elementos desde cero.
+
+==================================================
+VALIDACIÓN FINAL OBLIGATORIA
+==================================================
+
+Antes de generar, verificar:
+1. primer frame = solo fondo + halo;
+2. no existen líneas precargadas;
+3. todos los elementos ingresan animados;
+4. título y primer bloque comienzan exactamente en el mismo eje izquierdo;
+5. no existen grandes espacios muertos;
+6. los nombres son legibles;
+7. módulos tienen mayor jerarquía que temas;
+8. el rojo #FF0050 es solo acento;
+9. el halo es muy sutil;
+10. no aparecen logos ni información institucional adicional;
+11. toda la estructura queda visible al final;
+12. la composición parece diseñada para VIDEO 1920x1080.
+
+PRIORIDAD FINAL:
+ANIMACIÓN PROGRESIVA → ALINEACIÓN → LEGIBILIDAD → JERARQUÍA → APROVECHAMIENTO DEL ESPACIO → RECORRIDO → EQUILIBRIO → ELEGANCIA → ADAPTABILIDAD`
+}
+
+function evalBlock(){
+  return data.evaluations.map((e,i)=>{
+    let extra="";
+    if((e.type==="final_project"||e.type==="final_exam")&&finalEvidence())extra=`\n${finalEvidence()}`;
+    return `${String(i+1).padStart(2,"0")}\n${e.label||"EVALUACIÓN"}\n${Number(e.weight)||0}%${extra}`
+  }).join("\n\n")
+}
+function cumulative(){
+  let c=0;return data.evaluations.map(e=>{c+=Number(e.weight)||0;return `${c}%`}).join(" → ")
+}
+function buildEvalPrompt(){
+return `Genera un MOTION GRAPHIC EDUCATIVO ANIMADO, moderno, elegante, limpio y minimalista, en formato horizontal 16:9 y resolución 1920x1080.
+
+OBJETIVO
+Representar visualmente el SISTEMA DE EVALUACIÓN PROGRESIVA del curso. Debe comunicar que la calificación se construye mediante diferentes evidencias hasta completar el 100%.
+
+El diseño debe ser modular y reutilizable con diferente cantidad de actividades y porcentajes.
+
+==================================================
+RESTRICCIONES DE CONTENIDO
+==================================================
+
+NO incorporar:
+- logotipos;
+- nombres institucionales;
+- nombres de empresas;
+- marcas;
+- slogans;
+- pies de página;
+- avatares;
+- personas;
+- fotografías;
+- botones, controles o menús;
+- números de página;
+- información no proporcionada.
+
+Mostrar exclusivamente:
+- título;
+- componentes de evaluación;
+- porcentajes;
+- descripción breve del producto final cuando corresponda;
+- una única línea de progreso;
+- indicador final de 100%.
+
+==================================================
+TÍTULO — REGLA VISUAL ESTRICTA
+==================================================
+
+Mostrar únicamente:
+
+“Así se evaluará tu avance”
+
+El título debe ser:
+- BLANCO;
+- limpio;
+- sans serif;
+- semibold o bold;
+- alineado a la izquierda.
+
+REGLA ABSOLUTA:
+EL TÍTULO DEBE SER EXCLUSIVAMENTE TEXTO BLANCO.
+
+NO colocar:
+- líneas rojas debajo del título;
+- subrayados;
+- barras;
+- pequeños segmentos;
+- nodos;
+- marcadores;
+- acentos gráficos;
+- decoración roja encima, debajo, delante o detrás del título.
+
+NO utilizar #FF0050 en el área inmediata del encabezado.
+
+La única línea horizontal roja extensa debe ser la LÍNEA DE PROGRESO situada debajo de las tarjetas.
+
+==================================================
+CONTENIDO DE EVALUACIÓN
+==================================================
+
+${evalBlock()}
+
+TOTAL: ${sumWeights()}%
+
+==================================================
+CONCEPTO VISUAL
+==================================================
+
+Representar:
+AVANZAR → ACUMULAR → INTEGRAR → COMPLETAR
+
+Cada componente debe aparecer secuencialmente y hacer avanzar una línea de progreso.
+
+Progresión acumulada:
+${cumulative()}
+
+El espectador debe comprender la composición del total principalmente mediante el gráfico, no mediante una ecuación grande.
+
+==================================================
+ESTILO VISUAL
+==================================================
+
+Mantener la misma familia visual del gráfico de recorrido:
+
+- fondo negro carbón / gris grafito muy oscuro;
+- halo rojo #FF0050 MUY SUTIL y difuminado;
+- tarjetas gris carbón;
+- textos blancos y gris claro;
+- porcentajes en #FF0050;
+- bordes mínimos;
+- esquinas suavemente redondeadas;
+- sombras discretas;
+- apariencia académica, tecnológica, sobria y premium.
+
+Usar rojo únicamente en numeraciones, porcentajes, pequeños detalles, línea de progreso y nodo final.
+
+NO utilizar grandes superficies rojas.
+NO utilizar neón, partículas, flashes ni efectos 3D pronunciados.
+
+==================================================
+ESTRUCTURA
+==================================================
+
+Se detectaron ${data.evaluations.length} componentes de evaluación.
+
+${data.evaluations.length<=5
+? "Distribuir las tarjetas en UNA FILA HORIZONTAL amplia, utilizando prácticamente todo el ancho útil. Mantener separación uniforme y escala audiovisual."
+: "Distribuir las tarjetas en DOS FILAS o en un recorrido escalonado para mantener legibilidad. No reducir excesivamente tipografía ni tarjetas."}
+
+La evidencia final debe tener una jerarquía ligeramente mayor, sin romper el equilibrio.
+
+==================================================
+ALINEACIÓN
+==================================================
+
+El título, la primera tarjeta y el inicio de la línea de progreso deben compartir EXACTAMENTE EL MISMO EJE IZQUIERDO.
+
+Si el título comienza en X = 7%, la primera tarjeta y la línea inferior también deben empezar en X = 7%.
+
+NO aplicar sangría adicional.
+NO centrar el gráfico independientemente del título.
+
+==================================================
+MÁRGENES Y ESCALA
+==================================================
+
+Mantener aproximadamente:
+- 7% margen izquierdo;
+- 7% margen derecho;
+- 7% margen superior;
+- 7% margen inferior.
+
+La composición debe utilizar aproximadamente:
+- 82% a 88% del ancho útil;
+- 70% a 80% de la altura útil.
+
+NO dejar grandes espacios muertos a la derecha o en la parte inferior.
+
+REGLA:
+MENOS COMPONENTES = TARJETAS MÁS GRANDES.
+MÁS COMPONENTES = TARJETAS MÁS COMPACTAS Y REDISTRIBUIDAS.
+
+==================================================
+LÍNEA DE PROGRESO
+==================================================
+
+Debe existir UNA ÚNICA línea horizontal de progreso debajo de las tarjetas.
+
+Debe construirse progresivamente según los porcentajes:
+
+${cumulative()}
+
+La línea:
+- comienza en 0%;
+- avanza después de aparecer cada componente;
+- finaliza en ${sumWeights()}%;
+- no debe estar visible completa desde el inicio.
+
+Si el total configurado es 100%, mostrar “100%” como cierre visual.
+Si el total no es 100%, respetar el total proporcionado y NO inventar porcentajes.
+
+NO duplicar esta línea.
+NO generar líneas rojas decorativas en la zona del título.
+
+==================================================
+PRIMER FOTOGRAMA — REGLA ABSOLUTA
+==================================================
+
+En el primer fotograma SOLO deben verse:
+- fondo oscuro;
+- halo rojo ambiental extremadamente sutil.
+
+NADA MÁS.
+
+NO mostrar inicialmente:
+- título;
+- tarjetas;
+- porcentajes;
+- números;
+- líneas;
+- segmentos;
+- barra de progreso;
+- nodos;
+- bordes destacados.
+
+TODOS los elementos deben ingresar mediante animación.
+
+==================================================
+SECUENCIA DE ANIMACIÓN
+==================================================
+
+1. Fondo + halo únicamente.
+2. Aparece “Así se evaluará tu avance” mediante fade in. SIN línea ni decoración.
+3. Aparece el componente 01 con su porcentaje.
+4. Después de aparecer, la línea inferior avanza al primer acumulado.
+5. Aparece el componente 02 y luego avanza la línea.
+6. Repetir el patrón con todos los componentes.
+7. El último componente completa la progresión.
+8. Aparece el indicador del total final.
+9. Mantener toda la composición visible durante algunos segundos.
+
+Cada tarjeta debe entrar con:
+- fade in;
+- desplazamiento corto;
+- escalado muy leve 96% → 100%.
+
+NO utilizar rebotes, rotaciones, zoom pronunciado, flashes, confeti ni explosiones.
+
+==================================================
+SINCRONIZACIÓN CON LOCUCIÓN
+==================================================
+
+El gráfico debe acompañar esta locución:
+
+“${buildEvaluation()}”
+
+Cada componente y porcentaje debe aparecer en el momento en que sea mencionado.
+
+==================================================
+ADAPTABILIDAD
+==================================================
+
+La plantilla visual debe funcionar con:
+- diferente cantidad de actividades;
+- diferente cantidad de módulos;
+- participación;
+- proyecto final o examen final;
+- otras evaluaciones;
+- diferentes porcentajes.
+
+Si hay hasta 5 componentes:
+- preferir una fila horizontal.
+
+Si hay más de 5:
+- utilizar dos filas o recorrido escalonado.
+
+Nunca reducir la tipografía hasta perder legibilidad.
+Nunca dejar huecos grandes por conservar una retícula rígida.
+
+==================================================
+VALIDACIÓN FINAL OBLIGATORIA
+==================================================
+
+Antes de generar, comprobar:
+1. primer frame = solo fondo + halo;
+2. título = SOLO texto blanco;
+3. no existe ninguna línea roja debajo o alrededor del título;
+4. no hay elementos precargados;
+5. cada tarjeta entra animada;
+6. la línea de progreso se construye únicamente después de cada tarjeta;
+7. los porcentajes coinciden exactamente con los proporcionados;
+8. el total final coincide exactamente con la suma configurada;
+9. título, primera tarjeta y línea de progreso comparten el mismo eje izquierdo;
+10. no existen grandes espacios muertos;
+11. el rojo #FF0050 funciona únicamente como acento;
+12. no aparecen logos ni información institucional;
+13. toda la composición final permanece visible algunos segundos;
+14. el diseño se siente creado para VIDEO 1920x1080.
+
+REGLAS ABSOLUTAS FINALES:
+
+NO DECORAR EL TÍTULO.
+NO PRECARGAR LÍNEAS, TARJETAS, NÚMEROS NI PORCENTAJES.
+EL GRÁFICO DEBE CONSTRUIRSE PROGRESIVAMENTE DELANTE DEL ESPECTADOR.
+
+PRIORIDAD FINAL:
+PROGRESIÓN → LEGIBILIDAD → PORCENTAJES → ANIMACIÓN → ALINEACIÓN → APROVECHAMIENTO DEL ESPACIO → JERARQUÍA → ELEGANCIA → ADAPTABILIDAD`
+}
+
+$("#regenBtn").onclick=()=>{
+  // IMPORTANTE: volver a leer TODO desde el editor visible justo antes de generar.
+  syncAllFromEditor();
+
+  const emptyMods=data.modules.some(m=>!clean(m.name));
+  const emptyTopics=data.modules.some(m=>m.topics.some(t=>!clean(t.title)));
+  const emptyEval=data.evaluations.some(e=>!clean(e.label)||!Number(e.weight));
+
+  if(emptyMods||emptyTopics){
+    if(!confirm("Hay módulos o temas vacíos. ¿Deseas generar de todos modos?"))return;
+  }
+  if(emptyEval){
+    if(!confirm("Hay evaluaciones sin nombre o con porcentaje 0. ¿Deseas generar de todos modos?"))return;
+  }
+
+  // Todo lo generado desde aquí usa la versión reconstruida del editor actual.
+  $("#outName").value=data.title;
+  $("#outDescription").value=buildDescription();
+  $("#outRoute").value=buildRoute();
+  $("#outEval").value=buildEvaluation();
+  $("#routePrompt").value=buildRoutePrompt();
+  $("#evalPrompt").value=buildEvalPrompt();
+  $("#appliedSummary").innerHTML=appliedSummaryHtml();
+
+  $("#resultsCard").classList.remove("hidden");
+  $("#resultsCard").scrollIntoView({behavior:"smooth",block:"start"});
+};
+
+$("#copyAllBtn").onclick=()=>{
+  const txt=`NOMBRE_CURSO\n${$("#outName").value}\n\nDESCRIPCION_CURSO\n${$("#outDescription").value}\n\nRECORRIDO_CURSO\n${$("#outRoute").value}\n\nEVALUACION_CURSO\n${$("#outEval").value}`;
+  navigator.clipboard.writeText(txt);const b=$("#copyAllBtn");b.textContent="Copiado ✓";setTimeout(()=>b.textContent="Copiar las 4 variables",1300)
+};
+$$("[data-copy]").forEach(b=>b.onclick=()=>{
+  navigator.clipboard.writeText($("#"+b.dataset.copy).value);const old=b.textContent;b.textContent="Copiado ✓";setTimeout(()=>b.textContent=old,1100)
+});
+$$(".tab").forEach(t=>t.onclick=()=>{
+  $$(".tab").forEach(x=>x.classList.remove("active"));t.classList.add("active");
+  $("#vars").classList.toggle("hidden",t.dataset.tab!=="vars");
+  $("#prompts").classList.toggle("hidden",t.dataset.tab!=="prompts")
+});
+</script>
+</body>
+</html>
